@@ -2,7 +2,7 @@
 """
 validate_model.py — Structural integrity checks for the payroll data model.
 
-Parses model.mermaid and validates:
+Parses payroll_model.mermaid and validates:
   1. Every FK column has a "Ref: <table>" comment pointing to a table that exists
   2. Every FK references a column that is a PK in the target table
   3. FK and PK data types match
@@ -10,9 +10,10 @@ Parses model.mermaid and validates:
   5. Every relationship line references tables that exist in the diagram
   6. Naming convention checks (_key, _code, _name, _date, _amount, _quantity, _flag)
   7. SCD2 completeness: tables with effective_from_date also have effective_to_date and is_current_flag
+  8. payroll_schema.md sync: warns if tables or columns in payroll_model.mermaid are missing from payroll_schema.md, or vice versa
 
 Usage:
-    python validate_model.py                  # defaults to model.mermaid in same directory
+    python validate_model.py                       # defaults to payroll_model.mermaid in same directory
     python validate_model.py path/to/model.mermaid
 """
 
@@ -30,7 +31,7 @@ class Column:
     data_type: str
     is_pk: bool = False
     is_fk: bool = False
-    fk_ref_table: str | None = None  # extracted from "Ref: <table>"
+    fk_ref_table: str | None = None
     raw_line: str = ""
 
 
@@ -65,18 +66,16 @@ def parse_mermaid(filepath: Path) -> tuple[dict[str, Table], list[Relationship]]
     tables: dict[str, Table] = {}
     relationships: list[Relationship] = []
 
-    # Parse tables and columns
-    # Pattern: table_name { ... } — table names must start with dim_ or fact_
+    # Parse tables — names must start with dim_ or fact_
     table_pattern = re.compile(
         r'((?:dim|fact)_\w+)\s*\{([^}]*)\}',
         re.DOTALL
     )
 
-    # Column pattern: type name PK/FK "comment"
     col_pattern = re.compile(
-        r'^\s*(\w+)\s+(\w+)'           # data_type, column_name
-        r'(?:\s+(PK|FK))?'             # optional PK/FK marker
-        r'(?:\s+"([^"]*)")?'           # optional quoted comment
+        r'^\s*(\w+)\s+(\w+)'
+        r'(?:\s+(PK|FK))?'
+        r'(?:\s+"([^"]*)")?'
         r'\s*$',
         re.MULTILINE
     )
@@ -92,7 +91,6 @@ def parse_mermaid(filepath: Path) -> tuple[dict[str, Table], list[Relationship]]
             pk_fk = col_match.group(3) or ""
             comment = col_match.group(4) or ""
 
-            # Extract FK reference from comment like "Ref: dim_employee"
             fk_ref = None
             ref_match = re.search(r'Ref:\s*(\w+)', comment)
             if ref_match:
@@ -110,9 +108,8 @@ def parse_mermaid(filepath: Path) -> tuple[dict[str, Table], list[Relationship]]
         tables[table_name] = table
 
     # Parse relationships
-    # Pattern: table1 }o--|| table2 : "label"  (and other cardinality variants)
     rel_pattern = re.compile(
-        r'(\w+)\s+[|}{o]+--[|}{o]+\s+(\w+)\s*:\s*"([^"]*)"'
+        r'((?:dim|fact)_\w+)\s+[|}{o]+--[|}{o]+\s+((?:dim|fact)_\w+)\s*:\s*"([^"]*)"'
     )
     for rel_match in rel_pattern.finditer(text):
         relationships.append(Relationship(
@@ -173,7 +170,6 @@ def validate_fk_pk_type_match(tables: dict[str, Table]) -> list[str]:
             ref_pks = ref_table.pk_columns()
             if not ref_pks:
                 continue
-            # Match against the first PK (most tables have one)
             ref_pk = ref_pks[0]
             if col.data_type != ref_pk.data_type:
                 errors.append(
@@ -192,16 +188,13 @@ def validate_fk_target_is_pk(tables: dict[str, Table]) -> list[str]:
                 continue
             ref_table = tables[col.fk_ref_table]
             ref_pk_names = [pk.name for pk in ref_table.pk_columns()]
-            # The FK column name should match a PK name in the target
-            # (allowing for self-references like parent_organisation_key → organisation_key)
-            fk_base = col.name
-            # Handle prefixed FKs: adjusted_pay_run_key → pay_run_key, parent_organisation_key → organisation_key
-            candidate_names = [fk_base]
-            # Strip common prefixes
-            for prefix in ("adjusted_", "parent_"):
-                if fk_base.startswith(prefix):
-                    candidate_names.append(fk_base[len(prefix):])
-            # Date FKs referencing dim_calendar: start_date, end_date, etc. → calendar_date
+
+            candidate_names = [col.name]
+            # Strip common prefixes for self-referencing FKs
+            for prefix in ("adjusted_",):
+                if col.name.startswith(prefix):
+                    candidate_names.append(col.name[len(prefix):])
+            # Date FKs referencing dim_calendar
             if col.fk_ref_table == "dim_calendar":
                 candidate_names.append("calendar_date")
 
@@ -263,17 +256,14 @@ def validate_scd2_completeness(tables: dict[str, Table]) -> list[str]:
         col_names = {c.name for c in table.columns}
         has_standard = col_names & scd2_standard
         has_alt = col_names & scd2_alt
-        # Check standard pattern
         if has_standard and has_standard != scd2_standard:
-            # Maybe it's using the alt pattern instead
             if has_alt == scd2_alt:
-                continue  # valid alternative
+                continue
             missing = scd2_standard - has_standard
             errors.append(
                 f"[SCD2_INCOMPLETE] `{name}` has {sorted(has_standard)} but is missing "
                 f"{sorted(missing)} for complete SCD2 support."
             )
-        # Check alt pattern used partially
         if has_alt and has_alt != scd2_alt and not has_standard:
             missing = scd2_alt - has_alt
             errors.append(
@@ -281,6 +271,83 @@ def validate_scd2_completeness(tables: dict[str, Table]) -> list[str]:
                 f"{sorted(missing)} for complete SCD2 support."
             )
     return errors
+
+
+def parse_schema_md(filepath: Path) -> dict[str, list[str]]:
+    """
+    Parse schema.md and return {table_name: [column_names]}.
+
+    Looks for ### dim_* / ### fact_* headings and extracts the first `backtick`
+    cell from each markdown table row within that section.
+    """
+    tables: dict[str, list[str]] = {}
+    current_table: str | None = None
+
+    for line in filepath.read_text(encoding="utf-8").splitlines():
+        heading_match = re.match(r'^###\s+((?:dim|fact)_\w+)', line)
+        if heading_match:
+            current_table = heading_match.group(1)
+            tables[current_table] = []
+            continue
+
+        if current_table is None or not line.strip().startswith("|"):
+            continue
+
+        # Skip separator rows (e.g. | --- | --- |)
+        if re.match(r'^\s*\|[\s\-:|]+\|\s*$', line):
+            continue
+
+        cells = line.split("|")
+        if len(cells) >= 2:
+            col_match = re.match(r'`(\w+)`', cells[1].strip())
+            if col_match:
+                col_name = col_match.group(1)
+                # Skip header rows
+                if col_name.lower() != "column":
+                    tables[current_table].append(col_name)
+
+    return tables
+
+
+def validate_schema_md_sync(tables: dict[str, Table], mermaid_path: Path) -> list[str]:
+    """
+    Warn if schema.md is out of sync with model.mermaid.
+
+    Checks for:
+      - Tables present in the mermaid but missing from schema.md
+      - Tables documented in schema.md but not in the mermaid
+      - Columns present in a mermaid table but missing from the matching schema.md section
+      - Columns documented in schema.md but not present in the mermaid table
+
+    These are warnings, not errors — schema.md is a companion document, not the source of truth.
+    """
+    schema_path = mermaid_path.parent / "payroll_schema.md"
+    if not schema_path.exists():
+        return [f"[SCHEMA_MD_MISSING] payroll_schema.md not found alongside {mermaid_path.name} — cannot check sync."]
+
+    schema_tables = parse_schema_md(schema_path)
+    warnings = []
+
+    mermaid_names = set(tables.keys())
+    schema_names = set(schema_tables.keys())
+
+    for t in sorted(mermaid_names - schema_names):
+        warnings.append(f"[SCHEMA_MD_DRIFT] `{t}` is in model.mermaid but has no section in schema.md.")
+
+    for t in sorted(schema_names - mermaid_names):
+        warnings.append(f"[SCHEMA_MD_DRIFT] `{t}` has a section in schema.md but is not in model.mermaid.")
+
+    for table_name in sorted(mermaid_names & schema_names):
+        mermaid_cols = {c.name for c in tables[table_name].columns}
+        schema_cols = set(schema_tables[table_name])
+
+        for col in sorted(mermaid_cols - schema_cols):
+            warnings.append(f"[SCHEMA_MD_DRIFT] `{table_name}.{col}` is in model.mermaid but not documented in schema.md.")
+
+        for col in sorted(schema_cols - mermaid_cols):
+            warnings.append(f"[SCHEMA_MD_DRIFT] `{table_name}.{col}` is in schema.md but not in model.mermaid.")
+
+    return warnings
 
 
 def validate_orphan_tables(tables: dict[str, Table], relationships: list[Relationship]) -> list[str]:
@@ -298,10 +365,22 @@ def validate_orphan_tables(tables: dict[str, Table], relationships: list[Relatio
     return warnings
 
 
+def validate_duplicate_columns(tables: dict[str, Table]) -> list[str]:
+    """Check for duplicate column names within a table."""
+    errors = []
+    for name, table in tables.items():
+        seen = set()
+        for col in table.columns:
+            if col.name in seen:
+                errors.append(f"[DUPLICATE_COLUMN] `{name}.{col.name}` appears more than once.")
+            seen.add(col.name)
+    return errors
+
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    filepath = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).parent / "model.mermaid"
+    filepath = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).parent / "payroll_model.mermaid"
 
     if not filepath.exists():
         print(f"ERROR: File not found: {filepath}")
@@ -313,6 +392,11 @@ def main():
     tables, relationships = parse_mermaid(filepath)
 
     print(f"\nParsed {len(tables)} tables and {len(relationships)} relationships.")
+    for name, table in tables.items():
+        pk_count = len(table.pk_columns())
+        fk_count = len(table.fk_columns())
+        col_count = len(table.columns)
+        print(f"  {name}: {col_count} columns ({pk_count} PK, {fk_count} FK)")
     print()
 
     # Run all validators
@@ -326,28 +410,30 @@ def main():
     all_errors.extend(validate_fk_target_is_pk(tables))
     all_errors.extend(validate_relationships(tables, relationships))
     all_errors.extend(validate_scd2_completeness(tables))
+    all_errors.extend(validate_duplicate_columns(tables))
     all_warnings.extend(validate_naming_conventions(tables))
     all_warnings.extend(validate_orphan_tables(tables, relationships))
+    all_warnings.extend(validate_schema_md_sync(tables, filepath))
 
     # Report
     if all_errors:
         print(f"ERRORS ({len(all_errors)}):")
         for e in all_errors:
-            print(f"  ✗ {e}")
+            print(f"  FAIL {e}")
         print()
 
     if all_warnings:
         print(f"WARNINGS ({len(all_warnings)}):")
         for w in all_warnings:
-            print(f"  ⚠ {w}")
+            print(f"  WARN {w}")
         print()
 
     if not all_errors and not all_warnings:
-        print("✓ All checks passed. No errors or warnings.")
+        print("PASS All checks passed. No errors or warnings.")
     elif not all_errors:
-        print(f"✓ No errors. {len(all_warnings)} warning(s).")
+        print(f"PASS No errors. {len(all_warnings)} warning(s).")
     else:
-        print(f"✗ {len(all_errors)} error(s), {len(all_warnings)} warning(s).")
+        print(f"FAIL {len(all_errors)} error(s), {len(all_warnings)} warning(s).")
 
     sys.exit(1 if all_errors else 0)
 

@@ -1,0 +1,5 @@
+timesheet_entry_key,employee_key,calendar_date,cost_centre_code,project_code,task_code,hours_quantity,approval_status,entry_type
+756810425,4087952667,2024-01-15,,,,2.0,approved,overtime
+4291353446,4087952667,2024-02-20,,,,8.0,approved,overtime
+2008231619,1934040097,2024-03-12,,,,3.5,approved,overtime
+1596302026,3327927710,2024-04-01,,,,40.0,approved,training

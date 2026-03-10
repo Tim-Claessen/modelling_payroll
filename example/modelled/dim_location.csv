@@ -1,0 +1,4 @@
+location_key,location_code,location_name,site_name,city,state_province,country,region,effective_from_date,effective_to_date,is_current_flag
+1751046189,1100-1110,Site 1110,Site 1110,Perth,WA,Australia,WA,2022-01-01,9999-12-31,True
+1528938661,1200-1210,Site 1210,Site 1210,Perth,WA,Australia,WA,2022-01-01,9999-12-31,True
+252517322,2100-2110,Site 2110,Site 2110,Melbourne,VIC,Australia,VIC,2022-01-01,9999-12-31,True

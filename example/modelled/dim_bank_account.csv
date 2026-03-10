@@ -1,0 +1,5 @@
+bank_account_key,employee_key,bank_name,bsb_code,account_number_masked,account_name,account_type,is_primary_flag,valid_from_date,valid_to_date,is_current_flag
+310751747,1630821155,Bank 036,036-042,****7821,Jane Smith,savings,True,2023-01-15,9999-12-31,True
+2688968540,1630821155,Bank 062,062-000,****3344,Jane Smith,savings,False,2023-06-01,9999-12-31,True
+1129232240,,Bank 036,036-125,****9012,Carlos Garcia,savings,True,2022-03-01,9999-12-31,True
+1818908733,3327927710,Bank 063,063-111,****5566,Linh Nguyen,savings,True,2024-01-01,9999-12-31,True

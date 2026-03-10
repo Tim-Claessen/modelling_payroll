@@ -1,0 +1,5 @@
+pay_category_key,pay_category_code,pay_category_name,pay_category_type,pay_category_group
+1569976787,1000,Base Salary,earning,Gross Pay
+4269416198,1510,Overtime 1.5x,earning,Gross Pay
+982401756,3000,PAYG Tax,tax,Statutory Deductions
+1567996140,3500,Super Guarantee,employer_contribution,Employer Costs

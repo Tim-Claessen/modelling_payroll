@@ -1,0 +1,264 @@
+erDiagram
+
+    %% ============================================================
+    %% SAP HCM SOURCE TABLES
+    %% Personnel Administration (PA) Infotypes
+    %% ============================================================
+
+    %% All PA tables share common key: MANDT, PERNR, SUBTY, OBJPS, SPRPS, ENDDA, BEGDA, SEQNR
+
+    PA0000 {
+        CLNT MANDT PK "Client"
+        NUMC PERNR PK "Personnel Number"
+        CHAR SUBTY PK "Subtype"
+        CHAR OBJPS PK "Object Identification"
+        CHAR SPRPS "Lock Indicator"
+        DATS ENDDA PK "End Date"
+        DATS BEGDA PK "Start Date"
+        NUMC SEQNR PK "Sequence Number"
+        DATS AEDTM "Last Changed On"
+        CHAR UNAME "Changed By"
+        CHAR MASSN "Action Type"
+        CHAR MASSG "Reason for Action"
+        CHAR STAT2 "Employment Status"
+        CHAR STAT1 "Status - Active/Inactive"
+    }
+
+    PA0001 {
+        CLNT MANDT PK "Client"
+        NUMC PERNR PK "Personnel Number"
+        CHAR SUBTY PK "Subtype"
+        CHAR OBJPS PK "Object Identification"
+        CHAR SPRPS "Lock Indicator"
+        DATS ENDDA PK "End Date"
+        DATS BEGDA PK "Start Date"
+        NUMC SEQNR PK "Sequence Number"
+        DATS AEDTM "Last Changed On"
+        CHAR UNAME "Changed By"
+        CHAR BUKRS "Company Code"
+        CHAR WERKS "Personnel Area"
+        CHAR BTRTL "Personnel Subarea"
+        CHAR PERSG "Employee Group"
+        CHAR PERSK "Employee Subgroup"
+        NUMC ORGEH "Organisational Unit"
+        NUMC PLANS "Position"
+        NUMC STELL "Job Key"
+        CHAR KOSTL "Cost Center"
+        CHAR ABKRS "Payroll Area"
+        CHAR GSBER "Business Area"
+        CHAR ANSVH "Work Contract"
+        CHAR SACHA "Payroll Administrator"
+        CHAR SACHP "HR Administrator"
+        CHAR SACHZ "Time Administrator"
+    }
+
+    PA0002 {
+        CLNT MANDT PK "Client"
+        NUMC PERNR PK "Personnel Number"
+        CHAR SUBTY PK "Subtype"
+        CHAR OBJPS PK "Object Identification"
+        CHAR SPRPS "Lock Indicator"
+        DATS ENDDA PK "End Date"
+        DATS BEGDA PK "Start Date"
+        NUMC SEQNR PK "Sequence Number"
+        DATS AEDTM "Last Changed On"
+        CHAR UNAME "Changed By"
+        CHAR NACHN "Last Name"
+        CHAR VORNA "First Name"
+        CHAR TITEL "Title"
+        CHAR ANRED "Form of Address"
+        DATS GBDAT "Date of Birth"
+        CHAR GESCH "Gender"
+        CHAR NATIO "Nationality"
+        CHAR SPRSL "Communication Language"
+        CHAR FAMST "Marital Status"
+    }
+
+    PA0006 {
+        CLNT MANDT PK "Client"
+        NUMC PERNR PK "Personnel Number"
+        CHAR SUBTY PK "Subtype - Address Type"
+        CHAR OBJPS PK "Object Identification"
+        CHAR SPRPS "Lock Indicator"
+        DATS ENDDA PK "End Date"
+        DATS BEGDA PK "Start Date"
+        NUMC SEQNR PK "Sequence Number"
+        DATS AEDTM "Last Changed On"
+        CHAR UNAME "Changed By"
+        CHAR STRAS "Street and House Number"
+        CHAR ORT01 "City"
+        CHAR ORT02 "District"
+        CHAR PSTLZ "Postal Code"
+        CHAR STATE "Region - State"
+        CHAR LAND1 "Country Key"
+        CHAR TELNR "Telephone Number"
+        CHAR ENTKM "Distance in KM"
+    }
+
+    PA0007 {
+        CLNT MANDT PK "Client"
+        NUMC PERNR PK "Personnel Number"
+        CHAR SUBTY PK "Subtype"
+        CHAR OBJPS PK "Object Identification"
+        CHAR SPRPS "Lock Indicator"
+        DATS ENDDA PK "End Date"
+        DATS BEGDA PK "Start Date"
+        NUMC SEQNR PK "Sequence Number"
+        DATS AEDTM "Last Changed On"
+        CHAR UNAME "Changed By"
+        CHAR SCHKZ "Work Schedule Rule"
+        CHAR ZTERF "Time Management Status"
+        CHAR EMPCT "Employment Percentage"
+        CHAR MOSTD "Monthly Hours"
+        CHAR WOSTD "Weekly Hours"
+        CHAR ARBST "Daily Working Hours"
+        CHAR WKWDY "Weekly Workdays"
+    }
+
+    PA0008 {
+        CLNT MANDT PK "Client"
+        NUMC PERNR PK "Personnel Number"
+        CHAR SUBTY PK "Subtype"
+        CHAR OBJPS PK "Object Identification"
+        CHAR SPRPS "Lock Indicator"
+        DATS ENDDA PK "End Date"
+        DATS BEGDA PK "Start Date"
+        NUMC SEQNR PK "Sequence Number"
+        DATS AEDTM "Last Changed On"
+        CHAR UNAME "Changed By"
+        CHAR TRFAR "Pay Scale Type"
+        CHAR TRFGB "Pay Scale Area"
+        CHAR TRFGR "Pay Scale Group"
+        CHAR TRFST "Pay Scale Level"
+        CHAR BSGRD "Capacity Utilization Level - FTE"
+        CURR ANSAL "Annual Salary"
+        CHAR DIVGV "Divisor for Hourly Rate"
+        CHAR WAERS "Currency Key"
+        CHAR LGA01 "Wage Type 1"
+        CURR BET01 "Amount 1"
+        CHAR ANZ01 "Number 1"
+        CHAR LGA02 "Wage Type 2"
+        CURR BET02 "Amount 2"
+        CHAR ANZ02 "Number 2"
+    }
+
+    PA0009 {
+        CLNT MANDT PK "Client"
+        NUMC PERNR PK "Personnel Number"
+        CHAR SUBTY PK "Subtype - Payment Method"
+        CHAR OBJPS PK "Object Identification"
+        CHAR SPRPS "Lock Indicator"
+        DATS ENDDA PK "End Date"
+        DATS BEGDA PK "Start Date"
+        NUMC SEQNR PK "Sequence Number"
+        DATS AEDTM "Last Changed On"
+        CHAR UNAME "Changed By"
+        CHAR BANKL "Bank Key - BSB"
+        CHAR BANKN "Bank Account Number"
+        CHAR BKONT "Bank Control Key"
+        CHAR EMFTX "Payee Name"
+        CHAR ZLSCH "Payment Method"
+        CURR BETRG "Amount"
+        CHAR WAERS "Currency Key"
+        NUMC BKPLZ "Bank Postal Code"
+        CHAR BANKORT "Bank Location"
+    }
+
+    %% ============================================================
+    %% Time Management (PT) Infotypes
+    %% ============================================================
+
+    PA2001 {
+        CLNT MANDT PK "Client"
+        NUMC PERNR PK "Personnel Number"
+        CHAR SUBTY PK "Subtype - Absence Type"
+        CHAR OBJPS PK "Object Identification"
+        CHAR SPRPS "Lock Indicator"
+        DATS ENDDA PK "End Date"
+        DATS BEGDA PK "Start Date"
+        NUMC SEQNR PK "Sequence Number"
+        DATS AEDTM "Last Changed On"
+        CHAR UNAME "Changed By"
+        CHAR AWART "Absence Type"
+        DEC ABWTG "Absence Days"
+        DEC ABSSTD "Absence Hours"
+        DEC KVERB "Leave Deduction Days"
+        CHAR STDAZ "Hours Deducted"
+    }
+
+    PA2002 {
+        CLNT MANDT PK "Client"
+        NUMC PERNR PK "Personnel Number"
+        CHAR SUBTY PK "Subtype - Attendance Type"
+        CHAR OBJPS PK "Object Identification"
+        CHAR SPRPS "Lock Indicator"
+        DATS ENDDA PK "End Date"
+        DATS BEGDA PK "Start Date"
+        NUMC SEQNR PK "Sequence Number"
+        DATS AEDTM "Last Changed On"
+        CHAR UNAME "Changed By"
+        CHAR AWART "Attendance Type"
+        DEC STDAZ "Number of Hours"
+        TIMS BEGUZ "Start Time"
+        TIMS ENDUZ "End Time"
+        CHAR VTKEN "Previous Day Indicator"
+    }
+
+    PA2007 {
+        CLNT MANDT PK "Client"
+        NUMC PERNR PK "Personnel Number"
+        CHAR SUBTY PK "Subtype - Quota Type"
+        CHAR OBJPS PK "Object Identification"
+        CHAR SPRPS "Lock Indicator"
+        DATS ENDDA PK "End Date"
+        DATS BEGDA PK "Start Date"
+        NUMC SEQNR PK "Sequence Number"
+        DATS AEDTM "Last Changed On"
+        CHAR UNAME "Changed By"
+        CHAR KTART "Quota Type"
+        DEC ANZHL "Entitlement - Total Quota"
+        DEC KVERB "Quota Used"
+        DEC QUESTI "Quota Remaining"
+        DATS QUESSION "Deduction From Date"
+        DATS QUESSION2 "Deduction To Date"
+    }
+
+    %% ============================================================
+    %% Wage Type Report (Pre-built extract)
+    %% ============================================================
+
+    WAGE_TYPE_REPORT {
+        CLNT MANDT PK "Client"
+        NUMC PERNR PK "Personnel Number"
+        CHAR ABKRS "Payroll Area"
+        DATS FPPER_BEG "For Period Start"
+        DATS FPPER_END "For Period End"
+        DATS IPPER_BEG "In Period Start"
+        DATS IPPER_END "In Period End"
+        DATS PAYDT "Payment Date"
+        CHAR PAYTY "Pay Run Type"
+        CHAR LGART PK "Wage Type"
+        CHAR LGTXT "Wage Type Text"
+        CURR BETRG "Amount"
+        DEC ANZHL "Number - Units"
+        CURR RATE "Rate"
+        CHAR WAERS "Currency Key"
+        CHAR KOSTL "Cost Center"
+    }
+
+    %% ============================================================
+    %% RELATIONSHIPS
+    %% All PA tables link on PERNR (Personnel Number)
+    %% ============================================================
+
+    PA0000 ||--|| PA0001 : "same employee"
+    PA0000 ||--|| PA0002 : "same employee"
+    PA0001 ||--|| PA0002 : "same employee"
+    PA0001 ||--|{ PA0006 : "addresses"
+    PA0001 ||--|{ PA0007 : "working time"
+    PA0001 ||--|{ PA0008 : "basic pay"
+    PA0001 ||--|{ PA0009 : "bank details"
+    PA0001 ||--|{ PA2001 : "absences"
+    PA0001 ||--|{ PA2002 : "attendances"
+    PA0001 ||--|{ PA2007 : "leave quotas"
+    PA0001 ||--|{ WAGE_TYPE_REPORT : "payroll results"

@@ -1,0 +1,4 @@
+leave_type_key,leave_type_code,leave_type_name,leave_category,is_paid_flag
+1926419656,0100,Annual Leave,statutory,True
+2682798937,0200,Sick Leave,statutory,True
+3950157358,0400,Parental Leave,statutory,False

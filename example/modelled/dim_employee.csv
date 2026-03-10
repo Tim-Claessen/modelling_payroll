@@ -1,0 +1,5 @@
+employee_key,employee_code,first_name,last_name,date_of_birth,gender,employment_status,employment_type,hire_date,termination_date,job_key,organisation_key,location_key,effective_from_date,effective_to_date,is_current_flag
+4087952667,00001001,Jane,Smith,1990-03-15,Female,active,full_time,2023-01-15,,4098853442,179750527,1751046189,2023-01-15,2024-06-30,False
+1630821155,00001001,Jane,Smith,1990-03-15,Female,active,full_time,2023-01-15,,1878720108,2948197218,1751046189,2024-07-01,9999-12-31,True
+1934040097,00001002,Carlos,Garcia,1985-07-22,Male,active,part_time,2022-03-01,2025-03-01,3410735219,3579981446,1528938661,2022-03-01,2025-02-28,False
+3327927710,00001003,Linh,Nguyen,1992-11-08,Female,active,full_time,2024-01-01,,3790945868,158583896,252517322,2024-01-01,9999-12-31,True

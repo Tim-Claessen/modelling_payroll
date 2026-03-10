@@ -1,0 +1,7 @@
+organisation_key,organisation_code,organisation_name,organisation_type,cost_centre_code,cost_centre_name,department_name,business_unit_name,legal_entity_name,parent_organisation_code,effective_from_date,effective_to_date,is_current_flag
+357061086,1000,Company 1000,legal_entity,,,,,Company 1000,,2022-01-01,9999-12-31,True
+2013253053,2000,Company 2000,legal_entity,,,,,Company 2000,,2022-01-01,9999-12-31,True
+179750527,50000100,Org Unit 50000100,department,CC4100,Cost Centre CC4100,Org Unit 50000100,,Company 1000,1000,2022-01-01,9999-12-31,True
+2948197218,50000200,Org Unit 50000200,department,CC4200,Cost Centre CC4200,Org Unit 50000200,,Company 1000,1000,2022-01-01,9999-12-31,True
+3579981446,50000300,Org Unit 50000300,department,CC5100,Cost Centre CC5100,Org Unit 50000300,,Company 1000,1000,2022-01-01,9999-12-31,True
+158583896,60000100,Org Unit 60000100,department,CC6100,Cost Centre CC6100,Org Unit 60000100,,Company 2000,2000,2022-01-01,9999-12-31,True

@@ -1,0 +1,3 @@
+shift_type_key,shift_type_code,shift_type_name,standard_hours_quantity,planned_start_time,planned_end_time,break_duration_minutes
+1965489934,NORM,Normal Day Shift,7.6,08:00:00,16:00:00,30
+2638608173,PART,Part-time Shift,4.56,08:00:00,16:00:00,30

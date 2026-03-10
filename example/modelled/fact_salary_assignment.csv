@@ -1,0 +1,5 @@
+salary_assignment_key,employee_key,job_key,salary_basis,annual_salary_amount,hourly_rate_amount,currency_code,fte_ratio,effective_from_date,effective_to_date,is_current_flag,change_reason
+4000475618,4087952667,4098853442,annual,85000.0,40.8654,AUD,1.0,2023-01-15,2024-06-30,False,new_hire
+3821322701,1630821155,1878720108,annual,105000.0,50.4808,AUD,1.0,2024-07-01,9999-12-31,True,promotion
+2351169868,1934040097,3410735219,annual,55000.0,26.4423,AUD,0.6,2022-03-01,9999-12-31,True,new_hire
+3514891617,3327927710,3790945868,annual,92000.0,44.2308,AUD,1.0,2024-01-01,9999-12-31,True,new_hire
