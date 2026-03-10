@@ -1,0 +1,272 @@
+erDiagram
+
+    %% ============================================================
+    %% CONFORMED DIMENSIONS (shared across all subject areas)
+    %% ============================================================
+
+    dim_employee {
+        int employee_key PK
+        string employee_code
+        string first_name
+        string last_name
+        date date_of_birth
+        string gender
+        string employment_status
+        string employment_type
+        date hire_date
+        date termination_date
+        int job_key FK "Ref: dim_job"
+        int organisation_key FK "Ref: dim_organisation"
+        int location_key FK "Ref: dim_location"
+        date effective_from_date
+        date effective_to_date
+        boolean is_current_flag
+    }
+
+    dim_organisation {
+        int organisation_key PK
+        string organisation_code
+        string organisation_name
+        string organisation_type
+        string cost_centre_code
+        string cost_centre_name
+        string department_name
+        string business_unit_name
+        string legal_entity_name
+        int parent_organisation_key FK "Ref: dim_organisation"
+        date effective_from_date
+        date effective_to_date
+        boolean is_current_flag
+    }
+
+    dim_calendar {
+        date calendar_date PK
+        int day_of_week
+        string day_name
+        int week_of_year
+        int calendar_month
+        int calendar_year
+        int fiscal_month
+        int fiscal_year
+        string fiscal_period_name
+        string pay_period_identifier
+        boolean is_public_holiday_flag
+        string public_holiday_name
+    }
+
+    dim_job {
+        int job_key PK
+        string job_code
+        string job_title
+        string job_classification
+        string job_band
+        string job_grade
+        string job_family
+        date effective_from_date
+        date effective_to_date
+        boolean is_current_flag
+    }
+
+    dim_location {
+        int location_key PK
+        string location_code
+        string location_name
+        string site_name
+        string city
+        string state_province
+        string country
+        string region
+        date effective_from_date
+        date effective_to_date
+        boolean is_current_flag
+    }
+
+    %% ============================================================
+    %% STANDALONE DIMENSIONS
+    %% ============================================================
+
+    dim_bank_account {
+        int bank_account_key PK
+        int employee_key FK "Ref: dim_employee"
+        string bank_name
+        string bsb_code
+        string account_number_masked
+        string account_name
+        string account_type
+        boolean is_primary_flag
+        decimal split_percentage
+        date valid_from_date
+        date valid_to_date
+        boolean is_current_flag
+    }
+
+    %% ============================================================
+    %% PAYROLL subject area
+    %% ============================================================
+
+    dim_pay_run {
+        int pay_run_key PK
+        string pay_run_code
+        string pay_frequency
+        string pay_run_type
+        date for_period_start_date
+        date for_period_end_date
+        date in_period_start_date
+        date in_period_end_date
+        date payment_date
+        string pay_run_status
+        int adjusted_pay_run_key FK "Ref: dim_pay_run"
+    }
+
+    dim_pay_category {
+        int pay_category_key PK
+        string pay_category_code
+        string pay_category_name
+        string pay_category_type
+        string pay_category_group
+    }
+
+    fact_payslip_line {
+        int payslip_line_key PK
+        int employee_key FK "Ref: dim_employee"
+        int pay_run_key FK "Ref: dim_pay_run"
+        int pay_category_key FK "Ref: dim_pay_category"
+        int organisation_key FK "Ref: dim_organisation"
+        date calendar_date FK "Ref: dim_calendar"
+        decimal gross_amount
+        decimal net_amount
+        decimal units_quantity
+        decimal rate_amount
+    }
+
+    %% ============================================================
+    %% SALARY subject area
+    %% ============================================================
+
+    fact_salary_assignment {
+        int salary_assignment_key PK
+        int employee_key FK "Ref: dim_employee"
+        int job_key FK "Ref: dim_job"
+        int organisation_key FK "Ref: dim_organisation"
+        string salary_basis
+        decimal annual_salary_amount
+        decimal hourly_rate_amount
+        string currency_code
+        decimal fte_ratio
+        date effective_from_date
+        date effective_to_date
+        boolean is_current_flag
+        string change_reason
+    }
+
+    %% ============================================================
+    %% LEAVE subject area
+    %% ============================================================
+
+    dim_leave_type {
+        int leave_type_key PK
+        string leave_type_code
+        string leave_type_name
+        string leave_category
+        boolean is_paid_flag
+    }
+
+    fact_leave_record {
+        int leave_record_key PK
+        int employee_key FK "Ref: dim_employee"
+        int leave_type_key FK "Ref: dim_leave_type"
+        int organisation_key FK "Ref: dim_organisation"
+        date start_date FK "Ref: dim_calendar"
+        date end_date
+        decimal hours_quantity
+        decimal days_quantity
+        string approval_status
+        decimal balance_quantity
+    }
+
+    %% ============================================================
+    %% TIMESHEET subject area
+    %% ============================================================
+
+    fact_timesheet_entry {
+        int timesheet_entry_key PK
+        int employee_key FK "Ref: dim_employee"
+        int organisation_key FK "Ref: dim_organisation"
+        date calendar_date FK "Ref: dim_calendar"
+        string project_code
+        string task_code
+        decimal hours_quantity
+        string approval_status
+        string entry_type
+    }
+
+    %% ============================================================
+    %% ROSTER subject area
+    %% ============================================================
+
+    dim_shift_type {
+        int shift_type_key PK
+        string shift_type_code
+        string shift_type_name
+        decimal standard_hours_quantity
+        time planned_start_time
+        time planned_end_time
+        decimal break_duration_minutes
+    }
+
+    fact_roster_assignment {
+        int roster_assignment_key PK
+        int employee_key FK "Ref: dim_employee"
+        int shift_type_key FK "Ref: dim_shift_type"
+        int organisation_key FK "Ref: dim_organisation"
+        int location_key FK "Ref: dim_location"
+        date calendar_date FK "Ref: dim_calendar"
+        time actual_start_time
+        time actual_end_time
+        decimal actual_hours_quantity
+        string roster_status
+    }
+
+    %% ============================================================
+    %% RELATIONSHIPS
+    %% ============================================================
+
+    %% Conformed dimension relationships
+    dim_employee }o--|| dim_job : "classified by"
+    dim_employee }o--|| dim_organisation : "belongs to"
+    dim_employee }o--|| dim_location : "works at"
+    dim_organisation ||--o{ dim_organisation : "reports to (hierarchy)"
+
+    %% Bank account
+    dim_bank_account }o--|| dim_employee : "held by"
+
+    %% Payroll
+    fact_payslip_line }o--|| dim_employee : "paid to"
+    fact_payslip_line }o--|| dim_pay_run : "part of"
+    fact_payslip_line }o--|| dim_pay_category : "categorised as"
+    fact_payslip_line }o--|| dim_organisation : "charged to"
+    fact_payslip_line }o--|| dim_calendar : "on date"
+    dim_pay_run ||--o{ dim_pay_run : "adjusted by"
+
+    %% Salary
+    fact_salary_assignment }o--|| dim_employee : "contracted to"
+    fact_salary_assignment }o--|| dim_job : "for role"
+    fact_salary_assignment }o--|| dim_organisation : "within"
+
+    %% Leave
+    fact_leave_record }o--|| dim_employee : "taken by"
+    fact_leave_record }o--|| dim_leave_type : "type of"
+    fact_leave_record }o--|| dim_organisation : "within"
+    fact_leave_record }o--|| dim_calendar : "starting on"
+
+    %% Timesheet
+    fact_timesheet_entry }o--|| dim_employee : "submitted by"
+    fact_timesheet_entry }o--|| dim_organisation : "charged to"
+    fact_timesheet_entry }o--|| dim_calendar : "worked on"
+
+    %% Roster
+    fact_roster_assignment }o--|| dim_employee : "assigned to"
+    fact_roster_assignment }o--|| dim_shift_type : "shift of"
+    fact_roster_assignment }o--|| dim_organisation : "rostered in"
+    fact_roster_assignment }o--|| dim_location : "located at"
+    fact_roster_assignment }o--|| dim_calendar : "scheduled for"
