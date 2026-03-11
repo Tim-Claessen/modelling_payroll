@@ -2,13 +2,27 @@
 
 Column-level documentation for all tables. Data types use generic SQL types — adapt to your platform (e.g. Snowflake `NUMBER`, `VARCHAR`, `DATE`).
 
+## Modules
+
+To remove a module: delete or comment out its section below (and the matching block in `payroll_model.mermaid`). Module names match the `%% ==========` section headers in that file.
+
+- [x] **CORE ENTITIES** — `fact_payslip_line` + core dimensions *(required)*
+- [x] **SALARY** — `fact_salary_assignment`
+- [x] **LEAVE** — `fact_leave_record`, `dim_leave_type`
+- [x] **TIMESHEETS** — `fact_timesheet_entry`
+- [x] **ROSTERS** — `fact_roster_assignment`
+- [x] **BANK ACCOUNT** — `dim_bank_account`
+- [x] **PUBLIC HOLIDAY** — `dim_public_holiday`
+
 ---
 
-## Conformed Dimensions
+## CORE ENTITIES
+
+The minimum model. All other modules depend on these tables.
 
 ### dim_employee
 
-Canonical employee record. SCD Type 2 — each change to an employee's attributes creates a new row with a new surrogate key.
+Canonical employee record. SCD Type 2 — each change creates a new row with a new surrogate key.
 
 The employee's home organisation, job, and location are attributes of this dimension. All fact tables access organisational context through the employee FK.
 
@@ -41,27 +55,27 @@ Organisational hierarchy. SCD Type 2 — captures restructures, renames, and re-
 
 **Grain:** One row per org unit per version.
 
-| Column                     | Data Type      | Nullable | Description                                                                                                                                                                                       |
-| -------------------------- | -------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `organisation_key`         | `INTEGER`      | No       | Surrogate key (PK).                                                                                                                                                                               |
-| `organisation_code`        | `VARCHAR(50)`  | No       | Business/natural key. Stable across versions.                                                                                                                                                     |
-| `organisation_name`        | `VARCHAR(200)` | No       | Display name of the org unit.                                                                                                                                                                     |
-| `organisation_type`        | `VARCHAR(50)`  | No       | Type: `cost_centre`, `department`, `business_unit`, `legal_entity`, `division`.                                                                                                                   |
-| `cost_centre_code`         | `VARCHAR(50)`  | Yes      | Cost centre code if applicable. Can be used to join to `cost_centre_code` on fact tables.                                                                                                         |
-| `cost_centre_name`         | `VARCHAR(200)` | Yes      | Cost centre display name.                                                                                                                                                                         |
-| `department_name`          | `VARCHAR(200)` | Yes      | Department name.                                                                                                                                                                                  |
-| `business_unit_name`       | `VARCHAR(200)` | Yes      | Business unit name.                                                                                                                                                                               |
-| `legal_entity_name`        | `VARCHAR(200)` | Yes      | Legal entity name.                                                                                                                                                                                |
-| `parent_organisation_code` | `VARCHAR(50)`  | Yes      | Business code of the parent org unit. Self-referencing hierarchy via stable code rather than surrogate key — avoids binding the parent reference to a specific SCD2 version. NULL for root nodes. |
-| `effective_from_date`      | `DATE`         | No       | SCD2: Start of validity.                                                                                                                                                                          |
-| `effective_to_date`        | `DATE`         | No       | SCD2: End of validity. `9999-12-31` for current.                                                                                                                                                  |
-| `is_current_flag`          | `BOOLEAN`      | No       | SCD2: `TRUE` for active version.                                                                                                                                                                  |
+| Column                     | Data Type      | Nullable | Description                                                                                                                         |
+| -------------------------- | -------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `organisation_key`         | `INTEGER`      | No       | Surrogate key (PK).                                                                                                                 |
+| `organisation_code`        | `VARCHAR(50)`  | No       | Business/natural key. Stable across versions.                                                                                       |
+| `organisation_name`        | `VARCHAR(200)` | No       | Display name of the org unit.                                                                                                       |
+| `organisation_type`        | `VARCHAR(50)`  | No       | Type: `cost_centre`, `department`, `business_unit`, `legal_entity`, `division`.                                                     |
+| `cost_centre_code`         | `VARCHAR(50)`  | Yes      | Cost centre code if applicable. Can be used to join to `cost_centre_code` on fact tables.                                           |
+| `cost_centre_name`         | `VARCHAR(200)` | Yes      | Cost centre display name.                                                                                                           |
+| `department_name`          | `VARCHAR(200)` | Yes      | Department name.                                                                                                                    |
+| `business_unit_name`       | `VARCHAR(200)` | Yes      | Business unit name.                                                                                                                 |
+| `legal_entity_name`        | `VARCHAR(200)` | Yes      | Legal entity name.                                                                                                                  |
+| `parent_organisation_code` | `VARCHAR(50)`  | Yes      | Business code of the parent org unit. Self-referencing via stable code (not surrogate key) — avoids binding to a specific version. NULL for root nodes. |
+| `effective_from_date`      | `DATE`         | No       | SCD2: Start of validity.                                                                                                            |
+| `effective_to_date`        | `DATE`         | No       | SCD2: End of validity. `9999-12-31` for current.                                                                                    |
+| `is_current_flag`          | `BOOLEAN`      | No       | SCD2: `TRUE` for active version.                                                                                                    |
 
 ---
 
 ### dim_calendar
 
-Standard date dimension. Immutable — no SCD2. Public holidays have been moved to `dim_public_holiday` to support location-specific holidays.
+Standard date dimension. Immutable — no SCD2. Public holidays are in the optional `public_holidays` module to support location-specific holidays.
 
 **Grain:** One row per calendar date.
 
@@ -123,53 +137,11 @@ Work sites and geographic hierarchy. SCD Type 2.
 
 ---
 
-### dim_public_holiday
-
-Location-specific public holidays. Separated from `dim_calendar` because holidays vary by country, state, and sometimes site.
-
-**Grain:** One row per holiday per location per date.
-
-| Column                | Data Type      | Nullable | Description                                                                                                                                                                                                                   |
-| --------------------- | -------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `public_holiday_key`  | `INTEGER`      | No       | Surrogate key (PK).                                                                                                                                                                                                           |
-| `calendar_date`       | `DATE`         | No       | FK → `dim_calendar.calendar_date`. The date of the holiday.                                                                                                                                                                   |
-| `location_code`       | `VARCHAR(50)`  | No       | Business code identifying the location where this holiday applies. References `dim_location.location_code` — stored as a stable code rather than a surrogate key to avoid binding to a specific SCD2 version of the location. |
-| `public_holiday_name` | `VARCHAR(200)` | No       | Holiday name (e.g. `ANZAC Day`, `Christmas Day`, `Thanksgiving`).                                                                                                                                                             |
-| `public_holiday_type` | `VARCHAR(50)`  | No       | Type: `national`, `state`, `regional`, `company`.                                                                                                                                                                             |
-
----
-
-## Standalone Dimensions
-
-### dim_bank_account
-
-Employee bank/payment details. Deliberately separated from `dim_employee` for access control.
-
-**Grain:** One row per bank account per employee. Multiple accounts per employee supported.
-
-| Column                  | Data Type      | Nullable | Description                                                                              |
-| ----------------------- | -------------- | -------- | ---------------------------------------------------------------------------------------- |
-| `bank_account_key`      | `INTEGER`      | No       | Surrogate key (PK).                                                                      |
-| `employee_key`          | `INTEGER`      | No       | FK → `dim_employee.employee_key`. The employee who holds this account.                   |
-| `bank_name`             | `VARCHAR(200)` | No       | Name of the financial institution.                                                       |
-| `bsb_code`              | `VARCHAR(20)`  | Yes      | Branch/routing code. Format varies by country.                                           |
-| `account_number_masked` | `VARCHAR(50)`  | No       | Masked account number (e.g. `****1234`). Full number should not be stored at this layer. |
-| `account_name`          | `VARCHAR(200)` | No       | Name on the account.                                                                     |
-| `account_type`          | `VARCHAR(30)`  | No       | Account type: `savings`, `cheque`, `superannuation`, `other`.                            |
-| `is_primary_flag`       | `BOOLEAN`      | No       | `TRUE` if this is the primary/default payment account.                                   |
-| `valid_from_date`       | `DATE`         | No       | Date this account became active for the employee.                                        |
-| `valid_to_date`         | `DATE`         | No       | Date this account was deactivated. `9999-12-31` if active.                               |
-| `is_current_flag`       | `BOOLEAN`      | No       | `TRUE` for currently active accounts.                                                    |
-
----
-
-## Subject-Specific Dimensions
-
 ### dim_pay_run
 
 Pay run metadata. Not SCD2 — each pay run is a distinct event.
 
-Uses **For Period / In Period** temporal model: "For Period" is when the work was done; "In Period" is when the pay run was processed. These are identical for scheduled runs and diverge for back-pays, corrections, and off-cycle adjustments.
+Uses the **For Period / In Period** model: `for_period_*` is when the work was done; `in_period_*` is when the run was processed. These are identical for scheduled runs and diverge for back-pays, corrections, and off-cycle adjustments.
 
 **Grain:** One row per pay run.
 
@@ -205,71 +177,37 @@ Pay code reference. Static — no SCD2.
 
 ---
 
-### dim_leave_type
-
-Leave category reference. Static — no SCD2.
-
-**Grain:** One row per leave type.
-
-| Column            | Data Type      | Nullable | Description                                                         |
-| ----------------- | -------------- | -------- | ------------------------------------------------------------------- |
-| `leave_type_key`  | `INTEGER`      | No       | Surrogate key (PK).                                                 |
-| `leave_type_code` | `VARCHAR(50)`  | No       | Business code.                                                      |
-| `leave_type_name` | `VARCHAR(200)` | No       | Display name (e.g. `Annual Leave`, `Sick Leave`, `Parental Leave`). |
-| `leave_category`  | `VARCHAR(50)`  | No       | Category: `statutory`, `contractual`, `discretionary`.              |
-| `is_paid_flag`    | `BOOLEAN`      | No       | `TRUE` if paid leave.                                               |
-
----
-
-### dim_shift_type
-
-Shift definitions for rostering. Static — no SCD2.
-
-**Grain:** One row per shift type.
-
-| Column                    | Data Type      | Nullable | Description                                                    |
-| ------------------------- | -------------- | -------- | -------------------------------------------------------------- |
-| `shift_type_key`          | `INTEGER`      | No       | Surrogate key (PK).                                            |
-| `shift_type_code`         | `VARCHAR(50)`  | No       | Business code.                                                 |
-| `shift_type_name`         | `VARCHAR(200)` | No       | Display name (e.g. `Day Shift`, `Night Shift`, `Split Shift`). |
-| `standard_hours_quantity` | `DECIMAL(5,2)` | No       | Standard hours for this shift type.                            |
-| `planned_start_time`      | `TIME`         | No       | Planned start time.                                            |
-| `planned_end_time`        | `TIME`         | No       | Planned end time.                                              |
-| `break_duration_minutes`  | `DECIMAL(5,2)` | No       | Standard break duration in minutes.                            |
-
----
-
-## Fact Tables
-
 ### fact_payslip_line
 
 Individual earnings/deduction lines from payroll processing.
 
-`cost_centre_code` is a **degenerate dimension** — a flat attribute on the fact, not an FK to a dimension table. It represents where the payroll cost is allocated, which may differ from the employee's home org (e.g. secondments, shared services). If cost centre reporting becomes more complex, this can be promoted to a FK referencing a `dim_cost_centre`, or joined to `dim_organisation.cost_centre_code`.
+`cost_centre_code` is a degenerate dimension — a flat attribute on the fact, not a FK. It represents where the payroll cost is allocated, which may differ from the employee's home org (e.g. secondments, shared services).
 
-**Grain:** One row per employee × pay run × pay category. If source systems produce multiple lines for the same combination (e.g. different cost centres), add a `line_sequence_number`.
+**Grain:** One row per employee × pay run × pay category. If the source produces multiple lines for the same combination, add a `line_sequence_number`.
 
 | Column             | Data Type       | Nullable | Description                                                                                            |
 | ------------------ | --------------- | -------- | ------------------------------------------------------------------------------------------------------ |
 | `payslip_line_key` | `INTEGER`       | No       | Surrogate key (PK).                                                                                    |
 | `employee_key`     | `INTEGER`       | No       | FK → `dim_employee.employee_key`. Points to the SCD2 version active at time of pay run.                |
-| `pay_run_key`      | `INTEGER`       | No       | FK → `dim_pay_run.pay_run_key`. The pay run this line belongs to.                                      |
-| `pay_category_key` | `INTEGER`       | No       | FK → `dim_pay_category.pay_category_key`. The pay code (earnings/deduction type).                      |
-| `calendar_date`    | `DATE`          | No       | FK → `dim_calendar.calendar_date`. Payment date (aligns to `dim_pay_run.payment_date`).                |
+| `pay_run_key`      | `INTEGER`       | No       | FK → `dim_pay_run.pay_run_key`.                                                                        |
+| `pay_category_key` | `INTEGER`       | No       | FK → `dim_pay_category.pay_category_key`.                                                              |
+| `calendar_date`    | `DATE`          | No       | FK → `dim_calendar.calendar_date`. Payment date.                                                       |
 | `cost_centre_code` | `VARCHAR(50)`   | Yes      | Degenerate dimension: cost centre the payroll cost is charged to. NULL if same as employee's home org. |
-| `amount`           | `DECIMAL(18,2)` | No       | Gross amount for this line. Positive for earnings, negative for deductions.                            |
-| `units_quantity`   | `DECIMAL(10,2)` | Yes      | Units (e.g. hours, days) associated with this line. NULL for fixed amounts.                            |
+| `amount`           | `DECIMAL(18,2)` | No       | Gross amount. Positive for earnings, negative for deductions.                                          |
+| `units_quantity`   | `DECIMAL(10,2)` | Yes      | Units (e.g. hours, days). NULL for fixed amounts.                                                      |
 | `rate_amount`      | `DECIMAL(18,4)` | Yes      | Rate applied (e.g. hourly rate). NULL for fixed amounts or percentages.                                |
 
 ---
 
+## OPTIONAL: SALARY
+
+Contracted pay rates and salary history. Primary use: variance analysis against `fact_payslip_line` ("what should have been paid" vs. "what was paid").
+
 ### fact_salary_assignment
 
-Contracted/agreed pay rates and salary history. Modelled as a **fact table** (not a dimension) because the primary use case is variance analysis — comparing contracted/agreed rates against actual amounts paid in `fact_payslip_line`. Contains measurable values that downstream consumers need to aggregate, compare, and trend. See README for full design rationale.
+Modelled as a fact table (not a dimension) because it contains measurable values consumers need to aggregate, compare, and trend.
 
-Organisation context is inherited from the employee dimension.
-
-**Grain:** One row per employee × effective date range. A new row is created when the contracted salary or rate changes.
+**Grain:** One row per employee × effective date range.
 
 | Column                  | Data Type       | Nullable | Description                                                                                  |
 | ----------------------- | --------------- | -------- | -------------------------------------------------------------------------------------------- |
@@ -288,9 +226,27 @@ Organisation context is inherited from the employee dimension.
 
 ---
 
-### fact_leave_record
+## OPTIONAL: LEAVE
 
-Leave requests, approvals, and balances. Organisation context inherited from the employee dimension.
+Leave requests, approvals, and balances.
+
+### dim_leave_type
+
+Leave category reference. Static — no SCD2.
+
+**Grain:** One row per leave type.
+
+| Column            | Data Type      | Nullable | Description                                                         |
+| ----------------- | -------------- | -------- | ------------------------------------------------------------------- |
+| `leave_type_key`  | `INTEGER`      | No       | Surrogate key (PK).                                                 |
+| `leave_type_code` | `VARCHAR(50)`  | No       | Business code.                                                      |
+| `leave_type_name` | `VARCHAR(200)` | No       | Display name (e.g. `Annual Leave`, `Sick Leave`, `Parental Leave`). |
+| `leave_category`  | `VARCHAR(50)`  | No       | Category: `statutory`, `contractual`, `discretionary`.              |
+| `is_paid_flag`    | `BOOLEAN`      | No       | `TRUE` if paid leave.                                               |
+
+---
+
+### fact_leave_record
 
 **Grain:** One row per leave request/booking.
 
@@ -308,9 +264,13 @@ Leave requests, approvals, and balances. Organisation context inherited from the
 
 ---
 
+## OPTIONAL: TIMESHEETS
+
+Submitted time entries against cost centres or projects.
+
 ### fact_timesheet_entry
 
-Submitted time entries. `cost_centre_code` is a **degenerate dimension** — where the time cost is allocated (may differ from employee's home org for project-based costing). Organisation context inherited from the employee dimension.
+`cost_centre_code` is a degenerate dimension — where the time cost is allocated (may differ from employee's home org for project-based costing).
 
 **Grain:** One row per employee × date × project/task combination.
 
@@ -328,9 +288,13 @@ Submitted time entries. `cost_centre_code` is a **degenerate dimension** — whe
 
 ---
 
+## OPTIONAL: ROSTERS
+
+Planned and actual shift assignments.
+
 ### fact_roster_assignment
 
-Planned and actual shift assignments. Organisation context inherited from the employee dimension. Location is the physical work site (may differ from employee's home location).
+`shift_type_code` is a degenerate dimension — the shift category (e.g. `DAY`, `NIGHT`) stored as a flat attribute rather than an FK, keeping the roster table self-contained. Location is the physical work site for the shift — may differ from the employee's home location.
 
 **Grain:** One row per employee × date × shift.
 
@@ -338,10 +302,56 @@ Planned and actual shift assignments. Organisation context inherited from the em
 | ----------------------- | --------------- | -------- | ------------------------------------------------------------------------ |
 | `roster_assignment_key` | `INTEGER`       | No       | Surrogate key (PK).                                                      |
 | `employee_key`          | `INTEGER`       | No       | FK → `dim_employee.employee_key`.                                        |
-| `shift_type_key`        | `INTEGER`       | No       | FK → `dim_shift_type.shift_type_key`.                                    |
 | `location_key`          | `INTEGER`       | No       | FK → `dim_location.location_key`. Physical work location for this shift. |
 | `calendar_date`         | `DATE`          | No       | FK → `dim_calendar.calendar_date`. The rostered date.                    |
+| `shift_type_code`       | `VARCHAR(50)`   | Yes      | Degenerate dimension: shift category (e.g. `DAY`, `NIGHT`, `SPLIT`).    |
+| `planned_start_time`    | `TIME`          | Yes      | Planned start time for this shift.                                       |
+| `planned_end_time`      | `TIME`          | Yes      | Planned end time for this shift.                                         |
 | `actual_start_time`     | `TIME`          | Yes      | Actual clock-in time. NULL if not yet worked or no-show.                 |
 | `actual_end_time`       | `TIME`          | Yes      | Actual clock-out time. NULL if not yet worked or no-show.                |
 | `actual_hours_quantity` | `DECIMAL(10,2)` | Yes      | Actual hours worked. NULL if not yet worked.                             |
 | `roster_status`         | `VARCHAR(30)`   | No       | Status: `planned`, `confirmed`, `worked`, `no_show`, `cancelled`.        |
+
+---
+
+## OPTIONAL: BANK ACCOUNT
+
+Employee payment details. Separated from `dim_employee` for access control — not all consumers need to see payment information.
+
+### dim_bank_account
+
+**Grain:** One row per bank account per employee. Multiple accounts per employee supported.
+
+| Column                  | Data Type      | Nullable | Description                                                                              |
+| ----------------------- | -------------- | -------- | ---------------------------------------------------------------------------------------- |
+| `bank_account_key`      | `INTEGER`      | No       | Surrogate key (PK).                                                                      |
+| `employee_key`          | `INTEGER`      | No       | FK → `dim_employee.employee_key`.                                                        |
+| `bank_name`             | `VARCHAR(200)` | No       | Name of the financial institution.                                                       |
+| `bsb_code`              | `VARCHAR(20)`  | Yes      | Branch/routing code. Format varies by country.                                           |
+| `account_number_masked` | `VARCHAR(50)`  | No       | Masked account number (e.g. `****1234`). Full number should not be stored at this layer. |
+| `account_name`          | `VARCHAR(200)` | No       | Name on the account.                                                                     |
+| `account_type`          | `VARCHAR(30)`  | No       | Account type: `savings`, `cheque`, `superannuation`, `other`.                            |
+| `is_primary_flag`       | `BOOLEAN`      | No       | `TRUE` if this is the primary/default payment account.                                   |
+| `valid_from_date`       | `DATE`         | No       | Date this account became active for the employee.                                        |
+| `valid_to_date`         | `DATE`         | No       | Date this account was deactivated. `9999-12-31` if active.                               |
+| `is_current_flag`       | `BOOLEAN`      | No       | `TRUE` for currently active accounts.                                                    |
+
+---
+
+## OPTIONAL: PUBLIC HOLIDAY
+
+Location-specific public holidays. Separated from `dim_calendar` because holidays vary by country, state, and site.
+
+### dim_public_holiday
+
+`location_code` references `dim_location.location_code` (stable business code, not surrogate key) to avoid binding to a specific SCD2 version of the location.
+
+**Grain:** One row per holiday per location per date.
+
+| Column                | Data Type      | Nullable | Description                                                              |
+| --------------------- | -------------- | -------- | ------------------------------------------------------------------------ |
+| `public_holiday_key`  | `INTEGER`      | No       | Surrogate key (PK).                                                      |
+| `calendar_date`       | `DATE`         | No       | FK → `dim_calendar.calendar_date`. The date of the holiday.              |
+| `location_code`       | `VARCHAR(50)`  | No       | Stable code identifying where this holiday applies.                      |
+| `public_holiday_name` | `VARCHAR(200)` | No       | Holiday name (e.g. `ANZAC Day`, `Christmas Day`).                        |
+| `public_holiday_type` | `VARCHAR(50)`  | No       | Type: `national`, `state`, `regional`, `company`.                        |

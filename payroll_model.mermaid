@@ -1,9 +1,6 @@
 erDiagram
 
-    %% ============================================================
-    %% CONFORMED DIMENSIONS (shared across all subject areas)
-    %% ============================================================
-
+%% ========== CORE ENTITIES ==========
     dim_employee {
         int employee_key PK
         string employee_code
@@ -59,7 +56,6 @@ erDiagram
         string job_classification
         string job_band
         string job_grade
-        string job_family
         date effective_from_date
         date effective_to_date
         boolean is_current_flag
@@ -78,40 +74,6 @@ erDiagram
         date effective_to_date
         boolean is_current_flag
     }
-
-    %% ============================================================
-    %% LOCATION-SPECIFIC PUBLIC HOLIDAYS
-    %% ============================================================
-
-    dim_public_holiday {
-        int public_holiday_key PK
-        date calendar_date FK "Ref: dim_calendar"
-        string location_code
-        string public_holiday_name
-        string public_holiday_type
-    }
-
-    %% ============================================================
-    %% STANDALONE DIMENSIONS
-    %% ============================================================
-
-    dim_bank_account {
-        int bank_account_key PK
-        int employee_key FK "Ref: dim_employee"
-        string bank_name
-        string bsb_code
-        string account_number_masked
-        string account_name
-        string account_type
-        boolean is_primary_flag
-        date valid_from_date
-        date valid_to_date
-        boolean is_current_flag
-    }
-
-    %% ============================================================
-    %% PAYROLL subject area
-    %% ============================================================
 
     dim_pay_run {
         int pay_run_key PK
@@ -135,8 +97,6 @@ erDiagram
         string pay_category_group
     }
 
-    %% cost_centre_code is a degenerate dimension (no FK to a dim table)
-    %% Future: could become FK to dim_cost_centre or join to dim_organisation.cost_centre_code
     fact_payslip_line {
         int payslip_line_key PK
         int employee_key FK "Ref: dim_employee"
@@ -149,9 +109,16 @@ erDiagram
         decimal rate_amount
     }
 
-    %% ============================================================
-    %% SALARY subject area
-    %% ============================================================
+    dim_employee }o--|| dim_organisation : "home org"
+    dim_employee }o--|| dim_job : "job"
+    dim_employee }o--|| dim_location : "primary location"
+    fact_payslip_line }o--|| dim_employee : "employee"
+    fact_payslip_line }o--|| dim_pay_run : "pay run"
+    fact_payslip_line }o--|| dim_pay_category : "pay category"
+    fact_payslip_line }o--|| dim_calendar : "payment date"
+    dim_pay_run ||--o{ dim_pay_run : "corrects"
+
+%% ========== OPTIONAL: SALARY ==========
 
     fact_salary_assignment {
         int salary_assignment_key PK
@@ -168,9 +135,10 @@ erDiagram
         string change_reason
     }
 
-    %% ============================================================
-    %% LEAVE subject area
-    %% ============================================================
+    fact_salary_assignment }o--|| dim_employee : "employee"
+    fact_salary_assignment }o--|| dim_job : "job"
+
+%% ========== OPTIONAL: LEAVE ==========
 
     dim_leave_type {
         int leave_type_key PK
@@ -192,12 +160,12 @@ erDiagram
         decimal balance_quantity
     }
 
-    %% ============================================================
-    %% TIMESHEET subject area
-    %% ============================================================
+    fact_leave_record }o--|| dim_employee : "employee"
+    fact_leave_record }o--|| dim_leave_type : "leave type"
+    fact_leave_record }o--|| dim_calendar : "start date"
 
-    %% cost_centre_code is a degenerate dimension (no FK to a dim table)
-    %% Future: could become FK to dim_cost_centre or join to dim_organisation.cost_centre_code
+%% ========== OPTIONAL: TIMESHEETS ==========
+
     fact_timesheet_entry {
         int timesheet_entry_key PK
         int employee_key FK "Ref: dim_employee"
@@ -210,72 +178,55 @@ erDiagram
         string entry_type
     }
 
-    %% ============================================================
-    %% ROSTER subject area
-    %% ============================================================
+    fact_timesheet_entry }o--|| dim_employee : "employee"
+    fact_timesheet_entry }o--|| dim_calendar : "date"
 
-    dim_shift_type {
-        int shift_type_key PK
-        string shift_type_code
-        string shift_type_name
-        decimal standard_hours_quantity
-        time planned_start_time
-        time planned_end_time
-        decimal break_duration_minutes
-    }
+%% ========== OPTIONAL: ROSTERS ==========
 
     fact_roster_assignment {
         int roster_assignment_key PK
         int employee_key FK "Ref: dim_employee"
-        int shift_type_key FK "Ref: dim_shift_type"
         int location_key FK "Ref: dim_location"
         date calendar_date FK "Ref: dim_calendar"
+        string shift_type_code
+        time planned_start_time
+        time planned_end_time
         time actual_start_time
         time actual_end_time
         decimal actual_hours_quantity
         string roster_status
     }
 
-    %% ============================================================
-    %% RELATIONSHIPS
-    %% ============================================================
+    fact_roster_assignment }o--|| dim_employee : "employee"
+    fact_roster_assignment }o--|| dim_location : "work location"
+    fact_roster_assignment }o--|| dim_calendar : "date"
 
-    %% Conformed dimension relationships
-    dim_employee }o--|| dim_job : "classified by"
-    dim_employee }o--|| dim_organisation : "belongs to"
-    dim_employee }o--|| dim_location : "works at"
-    %% dim_organisation self-reference uses parent_organisation_code (stable code, not surrogate key)
-    %% to avoid binding the parent reference to a specific SCD2 version
+%% ========== OPTIONAL: BANK ACCOUNT ==========
 
-    %% Public holidays — location_code is a degenerate dimension (stable code, not surrogate key)
-    %% to avoid binding the holiday to a specific SCD2 version of the location
-    dim_public_holiday }o--|| dim_calendar : "on date"
+    dim_bank_account {
+        int bank_account_key PK
+        int employee_key FK "Ref: dim_employee"
+        string bank_name
+        string bsb_code
+        string account_number_masked
+        string account_name
+        string account_type
+        boolean is_primary_flag
+        date valid_from_date
+        date valid_to_date
+        boolean is_current_flag
+    }
 
-    %% Bank account
-    dim_bank_account }o--|| dim_employee : "held by"
+    dim_bank_account }o--|| dim_employee : "employee"
 
-    %% Payroll
-    fact_payslip_line }o--|| dim_employee : "paid to"
-    fact_payslip_line }o--|| dim_pay_run : "part of"
-    fact_payslip_line }o--|| dim_pay_category : "categorised as"
-    fact_payslip_line }o--|| dim_calendar : "on date"
-    dim_pay_run ||--o{ dim_pay_run : "adjusted by"
+%% ========== OPTIONAL: PUBLIC HOLIDAY ==========
 
-    %% Salary — org inherited from employee
-    fact_salary_assignment }o--|| dim_employee : "contracted to"
-    fact_salary_assignment }o--|| dim_job : "for role"
+    dim_public_holiday {
+        int public_holiday_key PK
+        date calendar_date FK "Ref: dim_calendar"
+        string location_code
+        string public_holiday_name
+        string public_holiday_type
+    }
 
-    %% Leave — org inherited from employee
-    fact_leave_record }o--|| dim_employee : "taken by"
-    fact_leave_record }o--|| dim_leave_type : "type of"
-    fact_leave_record }o--|| dim_calendar : "starting on"
-
-    %% Timesheet
-    fact_timesheet_entry }o--|| dim_employee : "submitted by"
-    fact_timesheet_entry }o--|| dim_calendar : "worked on"
-
-    %% Roster — org inherited from employee, location is physical work site
-    fact_roster_assignment }o--|| dim_employee : "assigned to"
-    fact_roster_assignment }o--|| dim_shift_type : "shift of"
-    fact_roster_assignment }o--|| dim_location : "located at"
-    fact_roster_assignment }o--|| dim_calendar : "scheduled for"
+    dim_public_holiday }o--|| dim_calendar : "date"

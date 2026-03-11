@@ -10,7 +10,7 @@ Parses payroll_model.mermaid and validates:
   5. Every relationship line references tables that exist in the diagram
   6. Naming convention checks (_key, _code, _name, _date, _amount, _quantity, _flag)
   7. SCD2 completeness: tables with effective_from_date also have effective_to_date and is_current_flag
-  8. payroll_schema.md sync: warns if tables or columns in payroll_model.mermaid are missing from payroll_schema.md, or vice versa
+  8. payroll_model.md sync: warns if tables or columns in payroll_model.mermaid are missing from payroll_model.md, or vice versa
 
 Usage:
     python validate_model.py                       # defaults to payroll_model.mermaid in same directory
@@ -321,9 +321,9 @@ def validate_schema_md_sync(tables: dict[str, Table], mermaid_path: Path) -> lis
 
     These are warnings, not errors — schema.md is a companion document, not the source of truth.
     """
-    schema_path = mermaid_path.parent / "payroll_schema.md"
+    schema_path = mermaid_path.parent / "payroll_model.md"
     if not schema_path.exists():
-        return [f"[SCHEMA_MD_MISSING] payroll_schema.md not found alongside {mermaid_path.name} — cannot check sync."]
+        return [f"[SCHEMA_MD_MISSING] payroll_model.md not found alongside {mermaid_path.name} — cannot check sync."]
 
     schema_tables = parse_schema_md(schema_path)
     warnings = []
