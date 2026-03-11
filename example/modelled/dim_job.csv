@@ -1,5 +1,5 @@
-job_key,job_code,job_title,job_classification,job_band,job_grade,job_family,effective_from_date,effective_to_date,is_current_flag
-4098853442,50000010,Job 50000010,Full-time employee,,,,2022-01-01,9999-12-31,True
-1878720108,50000020,Job 50000020,Full-time employee,,,,2022-01-01,9999-12-31,True
-3410735219,50000030,Job 50000030,Part-time employee,,,,2022-01-01,9999-12-31,True
-3790945868,60000010,Job 60000010,Full-time employee,,,,2022-01-01,9999-12-31,True
+job_key,job_code,job_title,job_classification,job_band,job_grade,effective_from_date,effective_to_date,is_current_flag
+4098853442,50000010,Job 50000010,Full-time employee,,,2022-01-01,9999-12-31,True
+1878720108,50000020,Job 50000020,Full-time employee,,,2022-01-01,9999-12-31,True
+3410735219,50000030,Job 50000030,Part-time employee,,,2022-01-01,9999-12-31,True
+3790945868,60000010,Job 60000010,Full-time employee,,,2022-01-01,9999-12-31,True

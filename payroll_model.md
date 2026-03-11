@@ -108,7 +108,6 @@ Job titles and classifications. SCD Type 2.
 | `job_classification`  | `VARCHAR(100)` | Yes      | Classification (e.g. award category, ANZSCO code).                 |
 | `job_band`            | `VARCHAR(50)`  | Yes      | Salary band or level.                                              |
 | `job_grade`           | `VARCHAR(50)`  | Yes      | Grade within band.                                                 |
-| `job_family`          | `VARCHAR(100)` | Yes      | Job family grouping (e.g. `Engineering`, `Finance`, `Operations`). |
 | `effective_from_date` | `DATE`         | No       | SCD2: Start of validity.                                           |
 | `effective_to_date`   | `DATE`         | No       | SCD2: End of validity.                                             |
 | `is_current_flag`     | `BOOLEAN`      | No       | SCD2: `TRUE` for active version.                                   |

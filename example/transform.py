@@ -52,19 +52,7 @@ def sap_date(d):
 
 
 def surrogate_key(*parts):
-    """
-    Generate a stable integer surrogate key from any number of natural-key parts.
-
-    Joins the parts with '|', hashes with MD5, and returns the first 8 hex
-    digits as a positive integer (~4 billion possible values — plenty for samples).
-
-    Why MD5 + truncate? It's fast, built-in, and deterministic. We're not
-    using it for security — purely for stable ID generation.
-
-    Example:
-        surrogate_key("employee", "00001001", "20230115")
-        surrogate_key("pay_run",  "AB", "20240301", "20240331", "S")
-    """
+    """Stable integer key from natural-key parts. MD5 truncated to 8 hex digits."""
     raw = "|".join(str(p) for p in parts)
     return int(hashlib.md5(raw.encode()).hexdigest()[:8], 16)
 
@@ -88,16 +76,15 @@ def write(filename, rows, fieldnames):
 # ─── Load all source tables ───────────────────────────────────────────────────
 
 print("\nLoading source tables...")
-pa0000 = read("PA0000.csv")    # Actions          (hire, terminate, status changes)
-pa0001 = read("PA0001.csv")    # Org Assignment   (SCD2 driver for dim_employee)
-pa0002 = read("PA0002.csv")    # Personal Data    (name, DOB, gender)
-pa0006 = read("PA0006.csv")    # Home Addresses   (not used — work location comes from PA0001)
-pa0007 = read("PA0007.csv")    # Working Time     (schedule rules → dim_shift_type)
-pa0008 = read("PA0008.csv")    # Basic Pay        (salary assignments)
-pa0009 = read("PA0009.csv")    # Bank Details     (bank accounts)
-pa2001 = read("PA2001.csv")    # Absences         (leave records)
-pa2002 = read("PA2002.csv")    # Attendances      (timesheet entries)
-pa2007 = read("PA2007.csv")    # Leave Quotas     (leave balances)
+pa0000 = read("PA0000.csv")    # Actions        (hire, terminate, status changes)
+pa0001 = read("PA0001.csv")    # Org Assignment (SCD2 driver for dim_employee)
+pa0002 = read("PA0002.csv")    # Personal Data  (name, DOB, gender)
+pa0007 = read("PA0007.csv")    # Working Time   (employment percentage)
+pa0008 = read("PA0008.csv")    # Basic Pay      (salary assignments)
+pa0009 = read("PA0009.csv")    # Bank Details   (bank accounts)
+pa2001 = read("PA2001.csv")    # Absences       (leave records)
+pa2002 = read("PA2002.csv")    # Attendances    (timesheet entries)
+pa2007 = read("PA2007.csv")    # Leave Quotas   (leave balances)
 wtr    = read("WAGE_TYPE_REPORT.csv")
 
 print(f"\nBuilding modelled tables...\n")
@@ -224,7 +211,6 @@ for row in pa0001:
             "job_classification":  PERSK_LABEL.get(persk, persk),
             "job_band":            None,
             "job_grade":           None,
-            "job_family":          None,
             "effective_from_date": "2022-01-01",
             "effective_to_date":   "9999-12-31",
             "is_current_flag":     True,
@@ -232,7 +218,7 @@ for row in pa0001:
 
 write("dim_job.csv", list(job_rows.values()), [
     "job_key", "job_code", "job_title", "job_classification",
-    "job_band", "job_grade", "job_family",
+    "job_band", "job_grade",
     "effective_from_date", "effective_to_date", "is_current_flag",
 ])
 
@@ -535,34 +521,6 @@ write("dim_leave_type.csv", list(leave_type_rows.values()), [
 ])
 
 
-# ─── dim_shift_type ───────────────────────────────────────────────────────────
-# Derived from PA0007 (planned working time / work schedule rules).
-# PA0007.SCHKZ = work schedule key → the shift type code.
-# Standard hours come from ARBST (daily hours).
-# Start/end times are not in PA0007 — hard-coded to standard office hours.
-
-shift_type_rows = {}
-for row in pa0007:
-    schkz = row["SCHKZ"]
-    key   = surrogate_key("shift_type", schkz)
-    if key not in shift_type_rows:
-        shift_type_rows[key] = {
-            "shift_type_key":          key,
-            "shift_type_code":         schkz,
-            "shift_type_name":         {"NORM": "Normal Day Shift", "PART": "Part-time Shift"}.get(schkz, f"Shift {schkz}"),
-            "standard_hours_quantity": float(row["ARBST"] or 0),
-            "planned_start_time":      "08:00:00",         # Not in source — standard office default
-            "planned_end_time":        "16:00:00",
-            "break_duration_minutes":  30,
-        }
-
-write("dim_shift_type.csv", list(shift_type_rows.values()), [
-    "shift_type_key", "shift_type_code", "shift_type_name",
-    "standard_hours_quantity", "planned_start_time", "planned_end_time",
-    "break_duration_minutes",
-])
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # FACT TABLES
 # ─────────────────────────────────────────────────────────────────────────────
@@ -571,16 +529,7 @@ write("dim_shift_type.csv", list(shift_type_rows.values()), [
 # Used by all fact tables to resolve the correct SCD2 version of the employee.
 
 def find_employee_key(pernr, target_date_iso):
-    """
-    Return the employee_key for the dim_employee version active on target_date_iso
-    (ISO format: YYYY-MM-DD).
-
-    Scans PA0001 for a record where:
-        BEGDA (converted) <= target_date <= ENDDA (converted)
-
-    Falls back to the most recent version if no exact match (shouldn't happen
-    with clean data, but guards against edge cases).
-    """
+    """Return employee_key for the SCD2 version active on target_date_iso. Falls back to latest version."""
     for p1 in pa0001:
         if p1["PERNR"] != pernr:
             continue

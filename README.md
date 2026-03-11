@@ -82,17 +82,26 @@ Cost allocation (where costs are charged) is a flat `cost_centre_code` text attr
 
 ---
 
-## Validation
+## Scripts
 
 ```bash
-python validate_model.py                    # checks payroll_model.md
-python validate_model.py path/to/model.md  # specify a path
+# Validate model integrity
+python validate_model.py                           # checks payroll_model.mermaid
+python validate_model.py path/to/model.mermaid    # specify a path
+
+# Generate SQL DDL  →  payroll_model_build_YYYYMMDD.sql
+python mermaid_to_sql.py                          # reads payroll_model.mermaid
+python mermaid_to_sql.py path/to/model.mermaid    # specify a path
 ```
 
-Checks: foreign key integrity, primary keys, history column completeness, naming conventions, no orphaned tables, no duplicate column names.
+`validate_model.py` checks: FK integrity, primary keys, SCD2 completeness, naming conventions, no orphaned tables, sync with `payroll_model.md`.
+
+`mermaid_to_sql.py` generates standard SQL `CREATE TABLE` statements with FK constraints. Review nullability against `payroll_model.md` before running — the mermaid format doesn't carry nullable info.
 
 ---
 
 ## TODO
 
 - Include data quality tests based on the model
+- Test the model using DuckDB
+- Write content in readme about DuckDB
